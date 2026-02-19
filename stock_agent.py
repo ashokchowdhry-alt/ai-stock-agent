@@ -43,9 +43,9 @@ def calculate_score(df):
     )
 
     if pd.isna(score):
-    return None
+        return None
 
-return round(float(score) * 100, 2)
+    return round(float(score) * 100, 2)
 
 # -------------------------
 # FETCH DATA + RANK
