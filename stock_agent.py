@@ -132,6 +132,49 @@ Provide:
         }
     )
 
+    data = response.json()
+
+    # DEBUG PRINT
+    print("Groq response:", data)
+
+    if "choices" not in data:
+        raise Exception(f"Groq API Error: {data}")
+
+    return data["choices"][0]["message"]["content"]
+
+
+def generate_summary2(df_scores):
+
+    top5 = df_scores.head(5).to_string(index=False)
+    bottom3 = df_scores.tail(3).to_string(index=False)
+
+    prompt = f"""
+You are a financial AI analyst.
+
+Top 5 stocks:
+{top5}
+
+Bottom 3 stocks:
+{bottom3}
+
+Provide:
+1. Overall portfolio tone
+2. Risk observation
+3. Short recommendation
+"""
+
+    response = requests.post(
+        "https://api.groq.com/openai/v1/chat/completions",
+        headers={
+            "Authorization": f"Bearer {GROQ_API_KEY}",
+            "Content-Type": "application/json"
+        },
+        json={
+            "model": "llama3-70b-8192",
+            "messages": [{"role": "user", "content": prompt}]
+        }
+    )
+
     return response.json()["choices"][0]["message"]["content"]
 
 # -------------------------
