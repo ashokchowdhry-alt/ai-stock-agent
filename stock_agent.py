@@ -42,7 +42,10 @@ def calculate_score(df):
         0.2 * latest["volume_trend"]
     )
 
-    return round(score * 100, 2)
+    if pd.isna(score):
+    return None
+
+return round(float(score) * 100, 2)
 
 # -------------------------
 # FETCH DATA + RANK
@@ -52,15 +55,36 @@ def analyze_stocks():
     results = []
 
     for ticker in STOCKS:
-        df = yf.download(ticker, period="3mo", progress=False)
-        if len(df) > 30:
+        try:
+            df = yf.download(ticker, period="3mo", progress=False)
+
+            if df.empty or len(df) < 40:
+                continue
+
+            df = df.dropna()
+
+            if len(df) < 40:
+                continue
+
             score = calculate_score(df)
-            results.append({"ticker": ticker, "score": score})
+
+            if pd.isna(score):
+                continue
+
+            results.append({"ticker": ticker, "score": float(score)})
+
+        except Exception as e:
+            print(f"Error processing {ticker}: {e}")
+            continue
+
+    if not results:
+        raise Exception("No stock data processed successfully.")
 
     df_scores = pd.DataFrame(results)
     df_scores = df_scores.sort_values(by="score", ascending=False)
 
     return df_scores
+
 
 # -------------------------
 # LLM SUMMARY (Groq)
