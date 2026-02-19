@@ -28,24 +28,32 @@ TO_EMAIL = os.getenv("TO_EMAIL")
 # -------------------------
 
 def calculate_score(df):
+    df = df.copy()
+
+    # Ensure proper column selection
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = df.columns.get_level_values(0)
+
     df["return_30"] = df["Close"].pct_change(30)
     df["return_7"] = df["Close"].pct_change(7)
     df["volatility"] = df["Close"].pct_change().rolling(30).std()
     df["volume_trend"] = df["Volume"].pct_change(7)
 
+    df = df.dropna()
+
+    if df.empty:
+        return None
+
     latest = df.iloc[-1]
 
     score = (
-        0.4 * latest["return_30"] +
-        0.2 * latest["return_7"] -
-        0.2 * latest["volatility"] +
-        0.2 * latest["volume_trend"]
+        0.4 * float(latest["return_30"]) +
+        0.2 * float(latest["return_7"]) -
+        0.2 * float(latest["volatility"]) +
+        0.2 * float(latest["volume_trend"])
     )
 
-    if pd.isna(score):
-        return None
-
-    return round(float(score) * 100, 2)
+    return round(score * 100, 2)
 
 # -------------------------
 # FETCH DATA + RANK
@@ -56,7 +64,9 @@ def analyze_stocks():
 
     for ticker in STOCKS:
         try:
-            df = yf.download(ticker, period="3mo", progress=False)
+            df = yf.download(ticker, period="3mo", auto_adjust=True, progress=False)
+
+    ##     df = yf.download(ticker, period="3mo", progress=False)
 
             if df.empty or len(df) < 40:
                 continue
